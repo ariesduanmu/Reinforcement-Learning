@@ -1,15 +1,15 @@
 from numpy import exp, array, random, dot
-#input 4 * 3
-#hidden layer1 3 * 5
-#hidden layer2 5 * 4
-#hidden layer3 4 * 1
-#output 4 * 1
+#input x * 9
+#hidden layer1 9 * 18
+#hidden layer2 18 * 36
+#hidden layer3 36 * 9
+#output x * 9
 class NeuralNetwork():
-	def __init__(self):
-		random.seed(1)
-		self.weight1 = random.random((3,5))
-		self.weight2 = random.random((5,4))
-		self.weight3 = random.random((4,1))
+	def __init__(self, weight1 = None, weight2 = None, weight3 = None):
+		
+		self.weight1 = random.randn(9,18) if weight1 == None else weight1
+		self.weight2 = random.randn(18,36) if weight2 == None else weight2
+		self.weight3 = random.randn(36,9) if weight3 == None else weight3
 	def __sigmoid(self, x):
 		return 1 / (1 + exp(-x))
 
@@ -45,10 +45,10 @@ if __name__ == "__main__":
 
 	neural_network = NeuralNetwork()
 
-	training_set_inputs = array([[0, 0, 1], [1, 1, 1], [1, 0, 1], [0, 1, 1]])
-	training_set_outputs = array([[0, 1, 1, 0]]).T
+	training_set_inputs = array([[1,0,-1,0,1,0,0,0,0],[0,1,0,1,-1,0,0,0,0],[-1,0,1,0,0,0,1,0,0],[1,-1,1,-1,1,0,0,0,0]])
+	training_set_outputs = array([[0,0,0,0,0,0,0,0,1],[0,0,0,0,0,0,1,0,0],[0,0,0,0,1,0,0,0,0],[0,0,0,0,0,0,1,0,0]])
 
 	neural_network.train(training_set_inputs, training_set_outputs, 10000)
 
-	print("Considering new situation [1, 0, 0] -> ?: ")
-	print(neural_network.think(array([1, 0, 0])))
+	print("Considering new situation [1,0,0,1,0,0,0,0,-1] -> ?: ")
+	print(neural_network.think(array([1,0,0,1,0,0,0,0,-1])))

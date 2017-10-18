@@ -1,5 +1,7 @@
 import pygame
-
+from numpy import array, reshape
+from tictactoe_model import TttModel
+import time
 SCREEN_WIDTH = 180
 
 WHITE = (255,255,255)
@@ -8,8 +10,7 @@ GRAY = (150,150,150)
 RED = (133,42,44)
 GREEN = (26,81,79)
 
-# human play 1
-# computer play -1
+FILE_NAME = "Tictactoe_weight.txt"
 class Tictactoe(object):
 	def __init__(self, model ,player=1):
 		pygame.init()
@@ -22,8 +23,8 @@ class Tictactoe(object):
 
 		self.model = model
 
-		#two part in replay_memory, human part and computer part
-		self.replay_memory = []
+		self.__computer_memory = []
+		self.__human_memory = []
 
 	def on_execute(self):
 		while self.__running:
@@ -34,10 +35,11 @@ class Tictactoe(object):
 			else:
 				self.computer_player()
 			
-			if self.check_full():
-				self.finish_game(0)
+			
 			self.on_render()
+			self.check_game_finish()
 		self.on_cleanup()
+
 
 	def on_event(self, event):
 		if event.type == pygame.QUIT:
@@ -51,15 +53,45 @@ class Tictactoe(object):
 	def on_cleanup(self):
 		pygame.quit()
 
-	def finish_game(self, winner):
-		# train computer player
-		if winner == 0:
-			print('draw')
-		elif winner == -1:
-			print('winner is -1')
-		elif winner == 1:
-			print('winner is 1')
-		self.reset_game()
+	def check_game_finish(self):
+
+		finish = True
+		if self.check_win() != 0:
+			#if is computer player
+			if self.__player == -1:
+				# add_train_data in self.replay_memory
+				# reward = 1
+				self.__human_memory = [[g,c*(-0.1)] for g,c in self.__human_memory]
+			else:
+				# computer loss the game
+				# add_train_data in self.replay_memory)
+				# reward = -0.1
+				self.__computer_memory = [[g,c*(-0.1)] for g,c in self.__computer_memory]
+			
+			winner = self.check_win()
+		elif self.check_full():
+			self.__human_memory = [[g,c*(0.1)] for g,c in self.__human_memory]
+			self.__computer_memory = [[g,c*(0.1)] for g,c in self.__computer_memory]
+			winner = 0
+		else:
+			finish = False
+
+		if finish:
+			# train computer player
+			if self.model is not None:
+				replay_memory = self.__computer_memory + self.__human_memory
+				self.model.train_network(replay_memory)
+			if winner == 0:
+				print('draw')
+			elif winner == -1:
+				print('winner is -1')
+			elif winner == 1:
+				print('winner is 1')
+			elif winner == 0:
+				print('draw')
+			time.sleep(1)
+			self.reset_game()
+
 
 	def reset_game(self):
 		self.grid = [[0 for _ in range(3)] for _ in range(3)]
@@ -68,42 +100,46 @@ class Tictactoe(object):
 
 	def computer_player(self):
 		if self.model is not None:
-			piece_pos_chosen = self.model.predict(self.grid)
+			cur_grid = reshape(array(self.grid),(1,9))[0]
+			piece_pos_chosen = self.model.predict(cur_grid)
+			print(piece_pos_chosen)
 			self.add_piece(piece_pos_chosen)
 
 	def human_player(self, event):
 		if event.type == pygame.MOUSEBUTTONUP:
 			pos = pygame.mouse.get_pos()
-			self.add_piece(pos)
+			row_height = SCREEN_WIDTH // 3
+
+			col = pos[0] // row_height
+			row = pos[1] // row_height
+			self.add_piece([row, col])
 
 	def add_piece(self, pos):
-		if self.mouse_position(pos):
-			if self.check_win() != 0:
-				#if is computer player
-				if self.__player == -1:
-					# add_train_data in self.replay_memory
-					# reward = 1
-					pass
-				else:
-					# computer loss the game
-					# add_train_data in self.replay_memory
-					# reward = 1
-				winner = self.check_win()
-				self.finish_game(winner)
-			else:
-				#if is computer player
-				if self.__player == -1:
-					# add_train_data in self.replay_memory
-					# reward = 0.1
-					pass
+		
+		choice = [0 for _ in range(9)]
+		choice[pos[0] * 3 + pos[1]] = 1
+		choice = array([choice])
 
-				self.__player = -1 * self.__player
+		cur_grid = reshape(array(self.grid),(1,9))
+		if self.mouse_position(pos):
+			#if is computer player
+			if self.__player == -1:
+				# add_train_data in self.replay_memory
+				
+				self.__computer_memory.append([cur_grid, choice])
+			else:
+				self.__human_memory.append([cur_grid * -1,choice])
+
+			self.__player = -1 * self.__player
 		else:
 			if self.__player == -1:
 				# add_train_data in self.replay_memory && train
 				# wrong predition
 				# reward = -10
-				pass
+				self.model.train_network([[cur_grid, choice * -10000]])
+			else:
+				
+				self.model.train_network([[cur_grid * -1, choice * -10000]])
 			print('error position: other pieces already in here')
 
 
@@ -132,13 +168,9 @@ class Tictactoe(object):
                                   width - margin,
                                   width - margin])
 	def mouse_position(self, pos):
-		row_height = SCREEN_WIDTH // 3
 
-		col = pos[0] // row_height
-		row = pos[1] // row_height
-
-		if self.grid[row][col] == 0:
-			self.grid[row][col] = self.__player
+		if self.grid[pos[0]][pos[1]] == 0:
+			self.grid[pos[0]][pos[1]] = self.__player
 			return True
 		return False
 	def check_win(self):
@@ -168,7 +200,8 @@ class Tictactoe(object):
 
 
 def main():
-	game = Tictactoe()
+	model = TttModel(FILE_NAME)
+	game = Tictactoe(model = model)
 	game.on_execute()
 	
 
