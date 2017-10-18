@@ -5,6 +5,10 @@ from keras.optimizers import Adam
 
 import os.path
 
+
+#loss the game all choose in this game * -1 and human player's choice +0.1
+#if win oppsite above
+#wrong piece: the last piece reward -10
 class TttModel(object):
 	def __init__(self, filename):
 		self.filename = filename
@@ -20,6 +24,8 @@ class TttModel(object):
 	def train_network(self):
 		#loss -1
 		#win +1
-		#draw 0
+		#draw 0.1
 		#wrong piece -10
-		
+		pass
+	def predict(self, input_data):
+		pass

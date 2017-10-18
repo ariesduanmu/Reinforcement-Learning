@@ -7,56 +7,106 @@ GRAY = (150,150,150)
 
 RED = (133,42,44)
 GREEN = (26,81,79)
+
+# human play 1
+# computer play -1
 class Tictactoe(object):
-	def __init__(self, player=1):
+	def __init__(self, model ,player=1):
 		pygame.init()
 		self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_WIDTH),pygame.HWSURFACE | pygame.DOUBLEBUF)
 		pygame.display.set_caption('Tic-Tac-Toe')
+		
+		
+		self.first_player = player
+		self.reset_game()
 
-		self.grid = [[0 for _ in range(3)] for _ in range(3)]
-		self.__running = True
-		self.__player = player
+		self.model = model
+
+		#two part in replay_memory, human part and computer part
+		self.replay_memory = []
 
 	def on_execute(self):
 		while self.__running:
 			self.game_board_init()
-			for event in pygame.event.get():
-				self.on_event(event)
+			if self.__player == 1:
+				for event in pygame.event.get():
+					self.on_event(event)
+			else:
+				self.computer_player()
+			
+			if self.check_full():
+				self.finish_game(0)
 			self.on_render()
 		self.on_cleanup()
+
 	def on_event(self, event):
 		if event.type == pygame.QUIT:
 			self.__running = False
-
-		if event.type == pygame.MOUSEBUTTONUP:
-			pos = pygame.mouse.get_pos()
-			if self.mouse_position(pos):
-				if self.check_win() != 0:
-					winner = self.check_win()
-					self.finish_game(winner)
-				else:
-					self.__player = -1 * self.__player
-
-				if self.check_full():
-					self.finish_game(0)
-			else:
-				print('error position: other pieces already in here')
-
-
+		self.human_player(event)
 
 	def on_render(self):
 		self.render_piece()
 		pygame.display.update()
+
 	def on_cleanup(self):
 		pygame.quit()
+
 	def finish_game(self, winner):
-		self.__running = False
+		# train computer player
 		if winner == 0:
 			print('draw')
 		elif winner == -1:
 			print('winner is -1')
 		elif winner == 1:
 			print('winner is 1')
+		self.reset_game()
+
+	def reset_game(self):
+		self.grid = [[0 for _ in range(3)] for _ in range(3)]
+		self.__running = True
+		self.__player = self.first_player
+
+	def computer_player(self):
+		if self.model is not None:
+			piece_pos_chosen = self.model.predict(self.grid)
+			self.add_piece(piece_pos_chosen)
+
+	def human_player(self, event):
+		if event.type == pygame.MOUSEBUTTONUP:
+			pos = pygame.mouse.get_pos()
+			self.add_piece(pos)
+
+	def add_piece(self, pos):
+		if self.mouse_position(pos):
+			if self.check_win() != 0:
+				#if is computer player
+				if self.__player == -1:
+					# add_train_data in self.replay_memory
+					# reward = 1
+					pass
+				else:
+					# computer loss the game
+					# add_train_data in self.replay_memory
+					# reward = 1
+				winner = self.check_win()
+				self.finish_game(winner)
+			else:
+				#if is computer player
+				if self.__player == -1:
+					# add_train_data in self.replay_memory
+					# reward = 0.1
+					pass
+
+				self.__player = -1 * self.__player
+		else:
+			if self.__player == -1:
+				# add_train_data in self.replay_memory && train
+				# wrong predition
+				# reward = -10
+				pass
+			print('error position: other pieces already in here')
+
+
 	def render_piece(self):
 		width = SCREEN_WIDTH // 3
 		margin = 10
