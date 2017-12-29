@@ -99,6 +99,8 @@ class Tictactoe(object):
 		self.__player = self.first_player
 
 	def computer_player(self):
+		# for event in pygame.event.get():
+		# 	self.on_event(event)
 		if self.model is not None:
 			cur_grid = reshape(array(self.grid),(1,9))[0]
 			piece_pos_chosen = self.model.predict(cur_grid)
@@ -112,6 +114,7 @@ class Tictactoe(object):
 
 			col = pos[0] // row_height
 			row = pos[1] // row_height
+			print(pos)
 			self.add_piece([row, col])
 
 	def add_piece(self, pos):
@@ -121,6 +124,7 @@ class Tictactoe(object):
 		choice = array([choice])
 
 		cur_grid = reshape(array(self.grid),(1,9))
+		print(pos)
 		if self.mouse_position(pos):
 			#if is computer player
 			if self.__player == -1:
@@ -204,7 +208,12 @@ def main():
 	game = Tictactoe(model = model)
 	game.on_execute()
 	
-
+'''
+  new plan about how to train
+  1, let it put random pieces first(can't put in place there is pieces in)
+  2, train by these random output first
+  3, user chose first or second play, play with computer, and computer continue learn from these games
+'''
 
 if __name__ == '__main__':
 	main()

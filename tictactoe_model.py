@@ -1,7 +1,7 @@
 import numpy as np
-from keras.models import Sequential
-from keras.layers import Dense, Activation, Convolution2D, Flatten
-from keras.optimizers import Adam
+# from keras.models import Sequential
+# from keras.layers import Dense, Activation, Convolution2D, Flatten
+# from keras.optimizers import Adam
 
 import os.path
 from nenural_network.first_nenural import NeuralNetwork
@@ -20,14 +20,14 @@ class TttModel(object):
 			self.model = NeuralNetwork(weight1 = hidden_weights[0], weight2 = hidden_weights[1], weight3 = hidden_weights[2])
 		else:
 			self.model = NeuralNetwork()
-	def build_model(self):
-		model = Sequential()
-		#[9] -> [9]
-		model.compile(loss='mse', optimizer=adam)
+	# def build_model(self):
+	# 	model = Sequential()
+	# 	#[9] -> [9]
+	# 	model.compile(loss='mse', optimizer=adam)
 
-		if os.path.exists(self.filename):
-			model.load_weights(self.filename)
-		return model
+	# 	if os.path.exists(self.filename):
+	# 		model.load_weights(self.filename)
+	# 	return model
 	
 	def train_network(self, replay_memory):
 		#loss -1
