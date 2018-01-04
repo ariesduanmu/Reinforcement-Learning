@@ -2,6 +2,7 @@ import pygame
 from numpy import array, reshape
 from tictactoe_model import TttModel
 import time
+from random import choice
 SCREEN_WIDTH = 180
 
 WHITE = (255,255,255)
@@ -11,12 +12,12 @@ RED = (133,42,44)
 GREEN = (26,81,79)
 
 FILE_NAME = "Tictactoe_weight.txt"
+
 class Tictactoe(object):
 	def __init__(self, model ,player=1):
 		pygame.init()
 		self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_WIDTH),pygame.HWSURFACE | pygame.DOUBLEBUF)
 		pygame.display.set_caption('Tic-Tac-Toe')
-		
 		
 		self.first_player = player
 		self.reset_game()
@@ -26,18 +27,23 @@ class Tictactoe(object):
 		self.__computer_memory = []
 		self.__human_memory = []
 
+
+	def test(self):
+		if self.__player == 1:
+			for event in pygame.event.get():
+				self.on_event(event)
+		else:
+			self.computer_player()
+
+
 	def on_execute(self):
 		while self.__running:
 			self.game_board_init()
-			if self.__player == 1:
-				for event in pygame.event.get():
-					self.on_event(event)
-			else:
-				self.computer_player()
-			
+			self.test()
 			
 			self.on_render()
 			self.check_game_finish()
+			
 		self.on_cleanup()
 
 
@@ -57,15 +63,10 @@ class Tictactoe(object):
 
 		finish = True
 		if self.check_win() != 0:
-			#if is computer player
+			
 			if self.__player == -1:
-				# add_train_data in self.replay_memory
-				# reward = 1
 				self.__human_memory = [[g,c*(-0.1)] for g,c in self.__human_memory]
 			else:
-				# computer loss the game
-				# add_train_data in self.replay_memory)
-				# reward = -0.1
 				self.__computer_memory = [[g,c*(-0.1)] for g,c in self.__computer_memory]
 			
 			winner = self.check_win()
@@ -87,11 +88,8 @@ class Tictactoe(object):
 				print('winner is -1')
 			elif winner == 1:
 				print('winner is 1')
-			elif winner == 0:
-				print('draw')
 			time.sleep(1)
 			self.reset_game()
-
 
 	def reset_game(self):
 		self.grid = [[0 for _ in range(3)] for _ in range(3)]
@@ -99,12 +97,9 @@ class Tictactoe(object):
 		self.__player = self.first_player
 
 	def computer_player(self):
-		# for event in pygame.event.get():
-		# 	self.on_event(event)
 		if self.model is not None:
 			cur_grid = reshape(array(self.grid),(1,9))[0]
 			piece_pos_chosen = self.model.predict(cur_grid)
-			print(piece_pos_chosen)
 			self.add_piece(piece_pos_chosen)
 
 	def human_player(self, event):
@@ -114,8 +109,12 @@ class Tictactoe(object):
 
 			col = pos[0] // row_height
 			row = pos[1] // row_height
-			print(pos)
+			
 			self.add_piece([row, col])
+	
+	def random_play(self):
+		choices = [(i, j) for i in range(3) for j in range(3)]
+		self.add_piece(choice(choices))
 
 	def add_piece(self, pos):
 		
@@ -124,12 +123,11 @@ class Tictactoe(object):
 		choice = array([choice])
 
 		cur_grid = reshape(array(self.grid),(1,9))
-		print(pos)
-		if self.mouse_position(pos):
-			#if is computer player
+		
+
+		if self.validate_position(pos):
+			
 			if self.__player == -1:
-				# add_train_data in self.replay_memory
-				
 				self.__computer_memory.append([cur_grid, choice])
 			else:
 				self.__human_memory.append([cur_grid * -1,choice])
@@ -137,13 +135,10 @@ class Tictactoe(object):
 			self.__player = -1 * self.__player
 		else:
 			if self.__player == -1:
-				# add_train_data in self.replay_memory && train
-				# wrong predition
-				# reward = -10
-				self.model.train_network([[cur_grid, choice * -10000]])
+				self.model.train_network([[cur_grid, choice * -1000]])
 			else:
 				
-				self.model.train_network([[cur_grid * -1, choice * -10000]])
+				self.model.train_network([[cur_grid * -1, choice * -1000]])
 			print('error position: other pieces already in here')
 
 
@@ -171,7 +166,7 @@ class Tictactoe(object):
                                   width * i + margin // 2,
                                   width - margin,
                                   width - margin])
-	def mouse_position(self, pos):
+	def validate_position(self, pos):
 
 		if self.grid[pos[0]][pos[1]] == 0:
 			self.grid[pos[0]][pos[1]] = self.__player
@@ -208,12 +203,6 @@ def main():
 	game = Tictactoe(model = model)
 	game.on_execute()
 	
-'''
-  new plan about how to train
-  1, let it put random pieces first(can't put in place there is pieces in)
-  2, train by these random output first
-  3, user chose first or second play, play with computer, and computer continue learn from these games
-'''
 
 if __name__ == '__main__':
 	main()
