@@ -3,8 +3,9 @@ from numpy import array, reshape
 import pickle
 from genetic import Genetic
 import os
+import pdb
 
-MAX_train = 50000
+MAX_train = 500000
 
 class TictactoeTrain():
     def __init__(self):
@@ -15,24 +16,43 @@ class TictactoeTrain():
         self.memories = []
         self.all_memories = {}
         self.read_dataset()
-        while True:
+        while self.game_count <= MAX_train:
             self.random_play_train()
             finish, winner = self.check_game_finish()
             if finish:
                 if winner == 1:
-                    self.memories = [[memory[0], memory[1], -1] for memory in self.memories]
+                    self.memories = [[memory[0], memory[1], 0 if memory[2] >= 0 else -1] for memory in self.memories ]
                 elif winner == -1:
-                    self.memories = [[memory[0], memory[1], 1] for memory in self.memories]
+                    self.memories = [[memory[0], memory[1], 1 if memory[2] >= 0 else -1] for memory in self.memories ]
                 else:
-                    self.memories = [[memory[0], memory[1], 0.2] for memory in self.memories]
+                    self.memories = [[memory[0], memory[1], 0.2 if memory[2] >= 0 else -1] for memory in self.memories]
 
                 for memory in self.memories:
-                    g = ' '.join(' '.join(map(str,m)) for m in memory[0])
+                    g = memory[0]
                     c = ' '.join(map(str,memory[1]))
-                    if g not in self.all_memories or c not in self.all_memories[g]:
-                        self.all_memories[g] = {c:memory[2]}
+                    if g not in self.all_memories:
+                        if memory[2] < 0:
+                            self.all_memories[g] = {c:{"win_rate":-1}}
+                        else:
+                            self.all_memories[g] = {c:{"win_rate":memory[2],"game":1}}
+
+                    elif c not in self.all_memories[g]:
+                        if memory[2] < 0:
+                            self.all_memories[g][c] = {"win_rate":-1}
+                        else:
+                            self.all_memories[g][c] = {"win_rate":memory[2],"game":1}
+                        
                     else:
-                        self.all_memories[g][c] += memory[2]
+                        r = self.all_memories[g][c]
+                        
+                        if r["win_rate"] >= 0 and memory[2] >= 0:
+                            r["win_rate"] = (r["win_rate"] * r["game"] + memory[2]) / (r["game"] + 1)
+                            r["game"] += 1
+                        
+                        self.all_memories[g][c] = r
+
+                
+
                 self.memories = []
                 self.save_dataset()
                 if self.game_count % 1000 == 0:
@@ -41,39 +61,58 @@ class TictactoeTrain():
 
 
     def test_random_train(self):
-        self.win_ = 0
-        self.loss_ = 0
-        self.draw_ = 0
-        self.error_ = 0
+        self.win1_ = 0
+        self.loss1_ = 0
+        self.draw1_ = 0
+        self.error1_ = 0
+
+        self.win2_ = 0
+        self.loss2_ = 0
+        self.draw2_ = 0
+        self.error2_ = 0
 
         self.all_memories = {}
         self.read_dataset()
+
+        self.in_ = 0
+        self.moves = 0
         while True:
             if self.player == 1:
                 self.random_player()
+                #self.ai_random_player1()
             else:
-                self.ai_random_player()
+                self.ai_random_player2()
             finish, winner = self.check_game_finish()
             if finish:
                 if winner == 1:
-                    self.loss_ += 1
+                    self.loss2_ += 1
+                    #self.win1_ += 1
                 elif winner == -1:
-                    self.win_ += 1
+                    self.win2_ += 1
+                    #self.loss1_ += 1
                 else:
-                    self.draw_ += 1
+                    self.draw2_ += 1
+                    #self.draw1_ += 1
 
                 if self.game_count > 0 and self.game_count % 10000 == 0:
-                    w = self.win_ / (self.win_ + self.loss_ + self.draw_ + self.error_)
-                    d = self.draw_ / (self.win_ + self.loss_ + self.draw_ + self.error_)
-                    l = self.loss_ / (self.win_ + self.loss_ + self.draw_ + self.error_)
-                    e = self.error_ / (self.win_ + self.loss_ + self.draw_ + self.error_)
-                    print("win: {}, draw: {}, loss: {}, error: {}".format(w,d,l,e))
-                    
+                    w2 = self.win2_ / (self.win2_ + self.loss2_ + self.draw2_ + self.error2_)
+                    d2 = self.draw2_ / (self.win2_ + self.loss2_ + self.draw2_ + self.error2_)
+                    l2 = self.loss2_ / (self.win2_ + self.loss2_ + self.draw2_ + self.error2_)
+                    e2 = self.error2_ / (self.win2_ + self.loss2_ + self.draw2_ + self.error2_)
+                    #w1 = self.win1_ / (self.win1_ + self.loss1_ + self.draw1_ + self.error1_)
+                    #d1 = self.draw1_ / (self.win1_ + self.loss1_ + self.draw1_ + self.error1_)
+                    #l1 = self.loss1_ / (self.win1_ + self.loss1_ + self.draw1_ + self.error1_)
+                    #e1 = self.error1_ / (self.win1_ + self.loss1_ + self.draw1_ + self.error1_)
+                    #print("win1: {}, draw1: {}, loss1: {}, error1: {}".format(w1,d1,l1,e1))
+                    print("win2: {}, draw2: {}, loss2: {}, error2: {}, in: {}".format(w2,d2,l2,e2, self.in_ / self.moves))
+                  
                 self.new_game()
+
 
     def neural_train(self, model):
         self.score = 0
         self.model = model
+        self.scores = []
         while True:
             if self.player == 1:
                 self.random_player()
@@ -82,53 +121,61 @@ class TictactoeTrain():
             finish, winner = self.check_game_finish()
             if finish:
                 if winner == 1:
-                    self.score += 1
+                    self.score -= 5
                 elif winner == -1:
                     self.score += 10
                 else:
-                    self.score += 10
+                    self.score += 2
 
                 if self.game_count > 0 and self.game_count % 1000 == 0:
-                    self.score = 0
-                    #self.model.update(self.score)
-                    #self.model.save_dataset()
-                    #self.validTest()
+                    self.model.update(self.score)
+                    self.model.save_dataset()
+                    print(len([s for s in self.scores if s > 2]) / len(self.scores))
+                    self.scores = []
 
+                self.scores.append(self.score)
+                self.score = 0
                 self.new_game()
 
     def random_play_train(self):
+        g = ' '.join(' '.join(map(str,m)) for m in self.grid)
         if self.player == -1:
-            bad_choices = [(i, j) for i in range(3) for j in range(3) if self.grid[i][j] == 0]
+            bad_choices = [(i, j) for i in range(3) for j in range(3) if self.grid[i][j] != 0]
             for c in bad_choices:
-                self.memories += [[self.grid, c, -10]]
+                self.memories += [[g, c, -1]]
 
         choices = [(i, j) for i in range(3) for j in range(3) if self.grid[i][j] == 0]
         pos = choice(choices)
+        
+        #pdb.set_trace()
         if self.add_piece(pos):
             if self.player == -1:
-                self.memories += [[self.grid, pos, 0]]
+                self.memories += [[g, pos, 0]]
+            
 
 
     def random_player(self):
         choices = [(i, j) for i in range(3) for j in range(3) if self.grid[i][j] == 0]
         _ = self.add_piece(choice(choices))
     
-    def ai_random_player(self):
+    def ai_random_player1(self):
         move = self.predict(self.grid)
         if not self.add_piece(move):
-            self.error_ += 1
+            self.error1_ += 1
+            self.new_game()
+
+    def ai_random_player2(self):
+        move = self.predict(self.grid)
+        if not self.add_piece(move):
+            #print(self.grid)
+            #print(move)
+            self.error2_ += 1
             self.new_game()
 
 
     def ai_neural_player(self):
-        # cur_choice = [0 for _ in range(9)]
-        # cur_choice[pos[0] * 3 + pos[1]] = 1
-        # cur_choice = array([cur_choice])
-        # cur_grid = reshape(array(self.grid),(1,9))
-        move = self.model.predict(reshape(array(self.grid),(1,9))[0])
-        if self.add_piece(move):
-            self.score += 1
-        else:
+        move = self.model.predict(self.grid, -1)
+        if not self.add_piece(move):
             self.score -= 100
             self.new_game()
 
@@ -144,34 +191,6 @@ class TictactoeTrain():
                 #print("draw")
         #self.grid_output()
         return finish, winner
-
-    def validTest(self):
-        error = []
-        correct = []
-        for _ in range(10):
-            player1_num = randint(1,4)
-            player2_num = player1_num + choice([0, -1])
-            
-            grid = [0 for _ in range(9)]
-
-            for _ in range(player1_num):
-                choices = [i for i in range(9) if grid[i] == 0]
-                
-                grid[choice(choices)] = 1
-
-            for _ in range(player2_num):
-                choices = [i for i in range(9) if grid[i] == 0]
-                
-                grid[choice(choices)] = -1
-
-            grid = array(grid)
-            pre = self.model.predict(grid)
-            row, col = pre
-            if grid[row * 3 + col] == 0:
-                correct += [pre]
-            else:
-                error += [pre]
-        print("Valid: {} Error: {}".format(len(correct), len(error)))
 
 
     def grid_output(self):
@@ -226,9 +245,14 @@ class TictactoeTrain():
 
     def predict(self, grid):
         g = ' '.join(' '.join(map(str,d)) for d in grid)
+        #pdb.set_trace()
+        self.moves += 1
         if g in self.all_memories:
-            best_choice = sorted([[c, self.all_memories[g][c]] for c in self.all_memories[g]], key = lambda x: -x[1])[0][0]
-            return list(map(int,best_choice.split(' ')))
+            best_choice = sorted([[c, self.all_memories[g][c]["win_rate"]] for c in self.all_memories[g]], key = lambda x: -x[1])
+            
+            if best_choice[0][1] > 0:
+                self.in_ += 1
+                return list(map(int,best_choice[0][0].split(' ')))
         return choice([(i,j) for i in range(3) for j in range(3) if grid[i][j] == 0])
 
     def save_dataset(self):
@@ -242,10 +266,11 @@ class TictactoeTrain():
 
 
 def main():
-    #model = Genetic()
+    model = Genetic()
     game = TictactoeTrain()
     #game.random_train()
-    game.test_random_train()
+    #game.test_random_train()
+    game.neural_train(model)
 
 if __name__ == "__main__":
     main()
