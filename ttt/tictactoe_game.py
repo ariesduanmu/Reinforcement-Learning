@@ -43,8 +43,3 @@ class TicTacToeBoard:
         board = ['O' if x == -1 else x for x in board]
         board = ['.' if x == 0 else x for x in board]
         return "{b[0]} | {b[1]} | {b[2]}\n--+---+---\n{b[3]} | {b[4]} | {b[5]}\n--+---+---\n{b[6]} | {b[7]} | {b[8]}\n\n".format(b = board)
-if __name__ == "__main__":
-    ttt = TicTacToeBoard()
-    ttt.add_piece(-1, 4)
-    print(ttt)
-    print(ttt.is_over())
