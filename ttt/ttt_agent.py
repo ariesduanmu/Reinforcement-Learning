@@ -3,6 +3,7 @@ import abc
 import numpy as np
 import os
 import pickle
+from genetic import Genetic, Genome
 
 class TTTAgent():
     def __init__(self, player):
@@ -25,27 +26,6 @@ class TTTAgent():
 
         return mov
 
-class TTTPolicyGradientAgent(TTTAgent):
-    def __init__(self, player, model_name):
-        H = 1000
-        weights = self.read_dataset(model_name)
-        if weights is None:
-            weights = {
-                      "W1" : np.random.rand(H, 9) * 2 - 1,
-                      "W2" : np.random.rand(9, H) * 2 - 1
-                      }
-        self.init_weights = weights
-        self.model_name = model_name
-        super().__init__(player)
-
-
-    def buildmodel(self):
-        return PolicyGradientModel(self.init_weights, self.model_name)
-
-    def update_model(self, player, winner, board_memory, move_memory, learning_rate):
-        self.model.update_weights(player, winner, board_memory, move_memory, learning_rate)
-        self.save_dataset(self.model.name, self.model.weights)
-
     def save_dataset(self,filename, data):
         pickle.dump(data, open(filename, 'wb+'))
 
@@ -54,6 +34,56 @@ class TTTPolicyGradientAgent(TTTAgent):
             return pickle.load(open(filename, 'rb'))
         return None
 
+    def update_model(self, player, winner, board_memory, move_memory, learning_rate):
+        pass
+
+class TTTGeneticAgent(TTTAgent):
+    def __init__(self, player, model_name):
+        self.model_name = model_name
+        super().__init__(player)
+        
+    def buildmodel(self):
+        population_size = 10
+        if self.read_dataset(self.model_name) is None:
+            genomes = [Genome() for _ in range(population_size)]
+            current_genome_idx = -1
+        else:
+            genomes, current_genome_idx = self.read_dataset(self.model_name)
+        return Genetic(genomes, current_genome_idx, population_size)
+    
+    def update_model(self, player, winner, board_memory, move_memory, learning_rate):
+        if player == winner:
+            score = 10
+        elif winner == 0:
+            score = 2
+        else:
+            score = -5
+
+        self.model.update(score)
+        self.save_dataset(self.model_name, (self.model.genomes, self.model.current_genome))
+
+
+class TTTPolicyGradientAgent(TTTAgent):
+    def __init__(self, player, model_name):
+        self.model_name = model_name
+        super().__init__(player)
+
+
+    def buildmodel(self):
+        H = 1000
+        weights = self.read_dataset(self.model_name)
+
+        if weights is None:
+            weights = {
+                      "W1" : np.random.rand(H, 9) * 2 - 1,
+                      "W2" : np.random.rand(9, H) * 2 - 1
+                      }
+        
+        return PolicyGradientModel(weights, self.model_name)
+
+    def update_model(self, player, winner, board_memory, move_memory, learning_rate):
+        self.model.update_weights(player, winner, board_memory, move_memory, learning_rate)
+        self.save_dataset(self.model.name, self.model.weights)
 
 class PolicyGradientModel():
     def __init__(self, weights, name):
@@ -97,7 +127,6 @@ class PolicyGradientModel():
 
         self.weights["W1"] -= (learning_rate / n) * W1_grad
         self.weights["W2"] -= (learning_rate / n) * W2_grad
-
 
     def process_training_data(self, player, winner, board_memory, move_memory):
 

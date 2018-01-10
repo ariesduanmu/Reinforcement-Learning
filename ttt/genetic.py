@@ -1,7 +1,5 @@
 from numpy import random, sqrt, exp, dot, argmax
 from random import choices, choice, uniform
-import pickle
-import os
 
 class Genome():
     def __init__(self, two_mine_pieces_in_row       = uniform(0, 1),
@@ -21,95 +19,85 @@ class Genome():
 
 #train 10 games test 1 games to get fitness for that genomes
 class Genetic:
-    def __init__(self):
+    def __init__(self, genomes, current_genome_idx, population_size):
         self.mutation_rate = 0.2
         self.mutation_step = 0.2
 
-        self.current_genome = -1
-        self.population_size = 10
-        self.genomes = []
-        self.read_dataset()
+        self.current_genome = current_genome_idx
+        self.population_size = population_size
+        self.genomes = genomes
         self.evaluate_next_genome()
 
     def update(self, score):
         self.genomes[self.current_genome].fitness = score
         self.evaluate_next_genome()
 
-    def predict(self, grid, player):
-        valid_choice = [(i, j) for i in range(3) for j in range(3) if grid[i][j] == 0]
-        scores = []
-        for pos in valid_choice:
-            g = [row[:] for row in grid]
-            g[pos[0]][pos[1]] = 1
-            scores += [[pos, self.score(g,player)]]
-        return sorted(scores, key = lambda x: -x[1])[0][0]
+    def predict(self, game, player):
+        board = game.get_board()
+        current_choices = self.predict_one_depth(board, player)
+        current_player = player
+        #depth = 2
+        current_player *= (-1)
+        for choice in current_choices:
+            next_board = choice[3]
+            next_choices = self.predict_one_depth(next_board, current_player)
+            next_best_move = self.best_choice(next_choices)
+            if current_player == player:
+                choice[1] += next_best_move[1]
+                choice[2] += next_best_move[2]
+            else:
+                choice[1] += next_best_move[2]
+                choice[2] += next_best_move[1]
+            choice[3] = next_best_move[3]
+        return self.best_choice(current_choices)[0]
+
+    def predict_one_depth(self, board, player):
+        valid_choices = [idx for idx in range(len(board)) if board[idx] == 0]
+        if len(valid_choices) == 0:
+            return [[-1, 0, 0, board]]
+
+        choices = []
+        for pos in valid_choices:
+            new_board = board[:]
+            new_board[pos] = player
+            choices += [[pos, self.score(new_board, player), self.score(new_board, player * (-1)) ,new_board]]
+        return choices
+
+    def best_choice(self, choices):
+        return max(choices, key = lambda x: 0.5 * x[1] + (-0.5) * x[2])
 
 
-    def score(self, grid, player):
-        score_ = 0
-        rotated_grid = [row for row in zip(*grid)]
-        def three_in_row():
-            def check_h_v(a):
-                for r in a:
-                    if sum(r) == 3:
-                        return 3
-                    elif sum(r) == -3:
-                        return -3
-                return 0
-            h = check_h_v(grid)
-            v = check_h_v(rotated_grid)
-            a_1 = grid[0][0] + grid[1][1] + grid[2][2]
-            a_2 = grid[0][2] + grid[1][1] + grid[2][0]
 
-            if 3 in [h,v,a_1,a_2]:
-                return 1
-            elif -3 in [h,v,a_1,a_2]:
-                return -1
-            return 0
-        three = three_in_row()
-        if three == player:
-            score_ += self.genomes[self.current_genome].three_mine_pieces_in_row
-        elif three == -1 * player:
-            score_ += self.genomes[self.current_genome].three_opponent_pieces_in_row
+    def score(self, board, player):
+        targets = [0 for _ in range(6)]
 
-        two_m = 0
-        two_o = 0
-        for r in grid:
-            if r.count(player) == 2:
-                two_m += 1
-            elif r.count(-1 * player) == 2:
-                two_o += 1
+        for i in range(3):
+            for j in range(3):
+                for n in [1,2,3,4]:
+                    for m in range(1,4):
 
-        for r in rotated_grid:
-            if r.count(player) == 2:
-                two_m += 1
-            elif r.count(-1 * player) == 2:
-                two_o += 1
+                        pieces_in_one_line = (i * 3 + j + (m-1) * n) // 3 == ((i * 3 + j) // 3) + ((m-1) if n > 1 else 0)
 
-        for r in [[grid[0][0], grid[1][1], grid[2][2]], [grid[0][2], grid[1][1], grid[2][0]]]:
-            if r.count(player) == 2:
-                two_m += 1
-            elif r.count(-1 * player) == 2:
-                two_o += 1
+                        open_line = i * 3 + j - n >= 0 and board[i * 3 + j - n] == 0 and\
+                                    i * 3 + j + m * n < 9 and board[i * 3 + j + m * n] == 0
 
-        one_m = grid.count([0,0,player]) + grid.count([0,player,0]) + grid.count([player,0,0])\
-                + rotated_grid.count([0,0,player]) + rotated_grid.count([0,player,0]) + rotated_grid.count([player,0,0])\
-                + 1 if [grid[0][0], grid[1][1], grid[2][2]] in [[0,0,player],[0,player,0],[player,0,0]] else 0\
-                + 1 if [grid[0][2], grid[1][1], grid[2][0]] in [[0,0,player],[0,player,0],[player,0,0]] else 0
-
-        one_o = grid.count([0,0,-1 * player]) + grid.count([0,-1 * player,0]) + grid.count([-1 * player,0,0])\
-                + rotated_grid.count([0,-1 * player,-1 * player]) + rotated_grid.count([-1 * player,-1 * player,0]) + rotated_grid.count([-1 * player,0,0])\
-                + 1 if [grid[0][0], grid[1][1], grid[2][2]] in [[0,0,-1 * player],[0,-1 * player,0],[-1 * player,0,0]] else 0\
-                + 1 if [grid[0][2], grid[1][1], grid[2][0]] in [[0,0,-1 * player],[0,-1 * player,0],[-1 * player,0,0]] else 0
-        score_ += two_m * self.genomes[self.current_genome].two_mine_pieces_in_row
-        score_ += two_o * self.genomes[self.current_genome].two_opponent_pieces_in_row
-        score_ += one_m * self.genomes[self.current_genome].mine_piece_in_open_row
-        score_ += one_o * self.genomes[self.current_genome].opponent_piece_in_open_row
-
-        return score_
-
-
+                        same_piece_in_line = i * 3 + j + (m-1) * n < 9 and len(set([board[i * 3 + j + k * n] for k in range(m)])) == 1
         
+                        if board[i * 3 + j] !=0 and \
+                           pieces_in_one_line and \
+                           (open_line if m == 1 else True) and \
+                           same_piece_in_line:
+                            
+                            if board[i * 3 + j] == player:
+                                targets[(m - 1) * 2] += 1
+                            else:
+                                targets[(m - 1) * 2 + 1] += 1
+        return targets[0] * self.genomes[self.current_genome].mine_piece_in_open_row +\
+               targets[1] * self.genomes[self.current_genome].opponent_piece_in_open_row +\
+               targets[2] * self.genomes[self.current_genome].two_mine_pieces_in_row +\
+               targets[3] * self.genomes[self.current_genome].two_opponent_pieces_in_row +\
+               targets[4] * self.genomes[self.current_genome].three_mine_pieces_in_row +\
+               targets[5] * self.genomes[self.current_genome].three_opponent_pieces_in_row        
 
     def evaluate_next_genome(self):
         self.current_genome += 1
@@ -148,14 +136,3 @@ class Genetic:
         if uniform(0, 1) < self.mutation_rate:
             child.three_opponent_pieces_in_row += uniform(0, 1) * self.mutation_step * 2 - self.mutation_step
         return child
-
-    def save_dataset(self):
-        with open('genomes', 'wb+') as f:
-            pickle.dump((self.genomes, self.current_genome), f, -1)
-    def read_dataset(self):
-        if not os.path.isfile('genomes'):
-            self.genomes = [Genome() for _ in range(self.population_size)]
-            
-        else:
-            with open('genomes', 'rb') as f:
-                self.genomes, self.current_genome = pickle.load(f)
