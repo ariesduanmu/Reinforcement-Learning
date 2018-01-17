@@ -66,8 +66,6 @@ class Genetic:
     def best_choice(self, choices):
         return max(choices, key = lambda x: 0.5 * x[1] + (-0.5) * x[2])
 
-
-
     def score(self, board, player):
         targets = [0 for _ in range(6)]
 

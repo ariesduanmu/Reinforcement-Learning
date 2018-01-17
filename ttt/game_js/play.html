@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Tic Tac Toe</title>
+    <style type="text/css">
+        body {
+            font-size: large;
+            font-family: sans-serif;
+        }
+        #play-area {
+            margin: 2em;
+        }
+        #settings, #controls {
+            margin: 1em;
+        }
+        #x-settings, #o-settings {
+            margin: 1ex;
+        }
+        #status {
+            width: 300px;
+        }
+        
+    </style>
+  </head>
+  <body>
+    <div id="play-area">
+        <canvas id="board" width="300" height="300"></canvas>
+        <div id="status"
+             data-empty="&nbsp;"
+             data-winner-x="X wins!"
+             data-winner-o="O wins!"
+             data-tie="Cat's game"
+             data-paused="AI paused"
+             data-thinking="Thinking..."
+        >&nbsp;</div>
+    </div>
+
+    <div id="settings">
+        <div id="x-settings">
+            X:
+            <select id="x-control">
+                <option value="human" selected>Human</option>
+                <option value="ai-random">AI: random</option>
+                <option value="ai-easy">AI: easy</option>
+                <option value="ai-smart">AI: smart</option>
+                <option value="ai-neural">AI: neural net</option>
+            </select>
+        </div>
+        <div id="o-settings">
+            O:
+            <select id="o-control">
+                <option value="human" selected>Human</option>
+                <option value="ai-random">AI: random</option>
+                <option value="ai-easy">AI: easy</option>
+                <option value="ai-smart">AI: smart</option>
+                <option value="ai-neural">AI: neural net</option>
+            </select>
+
+        </div>
+        
+    </div>
+
+    <div id="controls">
+        <input type="button" value="Pause AI" id="pause"
+               data-paused="Resume AI" data-unpaused="Pause AI">
+        <input type="button" value="Step AI" id="step">
+        <input type="button" value="Undo" id="undo">
+        <input type="button" value="Restart" id="restart">
+    </div>
+
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"
+        integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="
+        crossorigin="anonymous"></script>
+    <script src="src/ttt.js"></script>
+    <script src="src/neural.js"></script>
+    <script src="src/ai.js"></script>
+    <script src="src/genetic.js"></script>
+    <script src="play.js"></script>
+  </body>
+</html>
