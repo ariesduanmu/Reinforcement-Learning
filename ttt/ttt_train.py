@@ -23,20 +23,20 @@ class TTTTrain():
 
         for i in range(1000):
             if i < 500:
-                s = 1
-                winner, _, _, _, _ = self.game.play(agent_player1_1, agent_player1_2, print_board)
-            else:
                 s = -1
                 winner, _, _, _, _ = self.game.play(agent_player2_1, agent_player2_2, print_board)
+            else:
+                s = 1
+                winner, _, _, _, _ = self.game.play(agent_player1_1, agent_player1_2, print_board)
 
             results[abs(winner - s)] += 1
 
-            if i % 50 == 0:
+            if i % 5 == 0:
                 win_ratio = results[0] / sum(results)
-                print("win rate: {}\n win - {r[0]} lose - {r[1]} draw - {r[2]}".format(win_ratio, r=results))
+                print("win rate: {}\n win - {r[0]} lose - {r[2]} draw - {r[1]}".format(win_ratio, r=results))
 
         win_ratio = results[0] / sum(results)
-        print("win rate: {}\n win - {r[0]} lose - {r[1]} draw - {r[2]}".format(win_ratio, r=results))
+        print("win rate: {}\n win - {r[0]} lose - {r[2]} draw - {r[1]}".format(win_ratio, r=results))
         return win_ratio
 
 class TTTPolicyGradientTrain(TTTTrain):
@@ -98,12 +98,12 @@ class TTTGeneticTrain(TTTTrain):
 
 class TTTMCTSTrain(TTTTrain):
     def evaluate(self):
-        agent_player1_1 = TTTMCTSAgent()
-        agent_player1_2 = TTTGeneticAgent(GN_model_name)
-        agent_player2_1 = TTTGeneticAgent(GN_model_name)
-        agent_player2_2 = TTTMCTSAgent()
+        for i in range(10):
+            agent_player2_2 = TTTGeneticAgent(GN_model_name)
+            agent_player2_1 = TTTMCTSAgent(PG_model_name1)
 
-        return self.evaluate_train(agent_player1_1, agent_player2_2, agent_player1_2, agent_player2_1, print_board = False)
+            winner, _, _, _, _ = self.game.play(agent_player2_1, agent_player2_2, True)
+            print("---------winner: {} * {}/10---------".format(winner, i))
 
 if __name__ == "__main__":
     # pg_train = TTTPolicyGradientTrain(10000, 0.02)

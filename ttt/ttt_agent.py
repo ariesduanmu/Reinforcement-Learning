@@ -4,7 +4,7 @@ import numpy as np
 import os
 import pickle
 from genetic import Genetic, Genome
-from ttt_models import PolicyGradientModel, MCTSModel, RandomModel
+from ttt_models import PolicyGradientModel, MCTSNenuralModel, MCTSRandomModel, RandomModel
 
 class TTTAgent():
     def __init__(self):
@@ -81,15 +81,35 @@ class TTTPolicyGradientAgent(TTTAgent):
         return PolicyGradientModel(weights, self.model_name)
 
     def update_model(self, player, winner, board_memory, move_memory, learning_rate):
-        self.model.update_weights(player, winner, board_memory, move_memory, learning_rate)
+        self.model.update(player, winner, board_memory, move_memory, learning_rate)
         self.save_dataset(self.model.name, self.model.weights)
 
     def get_current_model(self):
         return self.model.weights
 
 class TTTMCTSAgent(TTTAgent):
+    def __init__(self, model_name):
+        self.model_name = model_name
+        super().__init__()
+        
     def buildmodel(self):
-        return MCTSModel()
+        H = 1000
+        weights = self.read_dataset(self.model_name)
+
+        if weights is None:
+            weights = {
+                      "W1" : np.random.rand(H, 9) * 2 - 1,
+                      "W2" : np.random.rand(9, H) * 2 - 1
+                      }
+        
+        return MCTSNenuralModel(weights, self.model_name)
+
+    def update_model(self, player, winner, board_memory, move_memory, learning_rate):
+        self.model.update(player, winner, board_memory, move_memory, learning_rate)
+        self.save_dataset(self.model.name, self.model.weights)
+
+    def get_current_model(self):
+        return self.model.weights
         
         
 class TTTRandomAgent(TTTAgent):
