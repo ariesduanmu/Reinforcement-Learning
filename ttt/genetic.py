@@ -32,9 +32,10 @@ class Genetic:
         self.genomes[self.current_genome].fitness = score
         self.evaluate_next_genome()
 
-    def predict(self, game, player):
-        board = game.get_board()
-        current_choices = self.predict_one_depth(board, player)
+    def predict(self, board):
+        player = board.current_player
+        current_board = board.get_board()
+        current_choices = self.predict_one_depth(current_board, player)
         current_player = player
         #depth = 2
         current_player *= (-1)

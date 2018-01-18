@@ -37,20 +37,18 @@ class TreeNode():
     def is_root(self):
         return self._parent == None
 
-class MTCS():
-    def __init__(self, policy_fn, c = 5, max_moves = 10000):
+class MCTS():
+    def __init__(self, policy_fn, c = 5, max_moves = 100):
         self.c = c
         self.max_moves = max_moves
         self.policy_fn = policy_fn
         self._root = TreeNode(None, 1.0)
 
     def predict(self, board):
-        begin = datetime.datetime.utcnow()
-        
         for i in range(self.max_moves):
             current_board = copy.deepcopy(board)
             self.simulate(current_board)
-        return max(self._root._children,items(), key = lambda x: x[1]._visit)[0]
+        return max(self._root._children.items(), key = lambda x: x[1]._visit)[0]
 
     def simulate(self, board):
         node = self._root
@@ -60,7 +58,7 @@ class MTCS():
             action, node = node.select(self.c)
             board.add_piece(action)
 
-        action_probs = self.policy_fn(board)
+        action_probs,_ = self.policy_fn(board)
         end, winner = board.is_over()
         if not end:
             node.expand(action_probs)

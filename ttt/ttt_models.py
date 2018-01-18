@@ -1,20 +1,23 @@
 import numpy as np
 from mcts import MCTS
+from random import choice
+
+
 
 class PolicyGradientModel():
     def __init__(self, weights, name):
         self.weights = weights
         self.name = name
 
-    def predict(self, game, player):
-        board_input = np.asarray(game.get_board()).reshape(9,1)
+    def predict(self, board):
+        board_input = np.asarray(board.get_board()).reshape(9,1)
         _,_,_,out = self.feed_forward(board_input)
         try:
             out_norm = [float(x) / float(sum(out)) for x in out]
             mov = int(np.random.choice(9, 1, p=out_norm))
         except ZeroDivisionError:
             mov = -1
-        empty_positions = game.get_empty_pos()
+        empty_positions = board.get_empty_pos()
         if mov not in empty_positions or mov == -1:
             mov = choice(empty_positions)
         return mov
@@ -65,12 +68,26 @@ class PolicyGradientModel():
         return self.sigmoid(x) * (1 - self.sigmoid(x))
 
 class MCTSModel():
-    def __init__(self):
-        self.mcts = MCTS()
+    def __init__(self, c = 5, max_move = 2000):
+        self.mcts = MCTS(self.policy, c, max_move)
 
-    def predict(self, game, player):
-        pass
+    def predict(self, board):
+        empty_positions = board.get_empty_pos()
+        if len(empty_positions) > 0:
+            move = self.mcts.predict(board)
+            self.mcts.update_last_move(-1)
+            return move
+        else:
+            print("WARNING: the board is full")
 
+    def policy(self, board):
+        action_probs = np.ones(len(board.get_empty_pos()))/len(board.get_empty_pos())
+        return zip(board.get_empty_pos(), action_probs), 0
+
+        
 class RandomModel():
-    def predict(self, game, player):
-        return choice(game.get_empty_pos())
+    def predict(self, board):
+        return choice(board.get_empty_pos())
+
+
+

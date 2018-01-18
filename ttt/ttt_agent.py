@@ -4,25 +4,19 @@ import numpy as np
 import os
 import pickle
 from genetic import Genetic, Genome
+from ttt_models import PolicyGradientModel, MCTSModel, RandomModel
 
 class TTTAgent():
-    def __init__(self, player = 0):
-        self.player = player
+    def __init__(self):
         self.model = self.buildmodel()
 
     @abc.abstractmethod
     def buildmodel(self):
         return None
 
-    def set_player(self, player):
-        self.player = player
-
-    def get_player(self):
-        return self.player
-
-    def next_move(self, game, print_board = True):
-        mov = self.model.predict(game, self.get_player())
-        game.add_piece(self.get_player(), mov)
+    def next_move(self, board, print_board = True):
+        mov = self.model.predict(board)
+        board.add_piece(mov)
 
         if print_board:
             print(board)
@@ -41,9 +35,9 @@ class TTTAgent():
         pass
 
 class TTTGeneticAgent(TTTAgent):
-    def __init__(self, player, model_name):
+    def __init__(self, model_name):
         self.model_name = model_name
-        super().__init__(player)
+        super().__init__()
         
     def buildmodel(self):
         population_size = 10
@@ -69,9 +63,9 @@ class TTTGeneticAgent(TTTAgent):
         return self.model.genomes[self.model.current_genome_idx]
 
 class TTTPolicyGradientAgent(TTTAgent):
-    def __init__(self, player, model_name):
+    def __init__(self, model_name):
         self.model_name = model_name
-        super().__init__(player)
+        super().__init__()
 
 
     def buildmodel(self):
@@ -93,7 +87,11 @@ class TTTPolicyGradientAgent(TTTAgent):
     def get_current_model(self):
         return self.model.weights
 
-
+class TTTMCTSAgent(TTTAgent):
+    def buildmodel(self):
+        return MCTSModel()
+        
+        
 class TTTRandomAgent(TTTAgent):
     def buildmodel(self):
         return RandomModel()

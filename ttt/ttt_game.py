@@ -57,9 +57,6 @@ class TTTGame():
     def play(self, player1, player2, print_board = False):
         self.board.restart()
 
-        player1.set_player(1)
-        player2.set_player(2)
-
         p1_board_memory = []
         p2_board_memory = []
         p1_move_memory = []
