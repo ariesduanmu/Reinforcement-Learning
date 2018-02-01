@@ -1,1 +1,1 @@
-# Tic-tac-toe_training
+# Reinforcement_training

@@ -58,7 +58,7 @@ class MCTS():
         begin = datetime.datetime.utcnow()
         while datetime.datetime.utcnow() - begin < self.calculation_time:
             self._simulate(board)
-        return self.root.select(board, self.c, board.current_player)[0]
+        return self.root.select(board, self.c, board.current_player, True)[0]
 
     def update_last_move(self, last_move):
         if last_move in self.root._children:

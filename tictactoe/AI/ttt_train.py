@@ -89,6 +89,8 @@ class TTTGeneticTrain(TTTTrain):
                     print("[+] New best gene")
                     self.best_win_ration = win_ratio
                     #pickle.dump(data, open('best_gene.model', 'wb+'))
+    def get_lots_data(self):
+        winner, p1_board_memory, p1_move_memory, p2_board_memory, p2_move_memory = self.game.play(agent_player2_1, agent_player2_2, print_board)
 
     def evaluate(self):
         agent_player1 = TTTGeneticAgent(GN_model_name)
